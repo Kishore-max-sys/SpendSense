@@ -1,25 +1,24 @@
-import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link, useLocation } from "react-router-dom";
 import api from "../../api/axios";
 import Sidebar from "../../components/Sidebar";
 import useMessage from "../../hooks/useMessage";
 import "./Transactions.css";
 
 function Transactions() {
-  const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoryId, setCategoryId] = useState(0);
   const [amount, setAmount] = useState(0);
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
   const [id, setId] = useState(0);
-  const [searchCategoryId, setSearchCategoryId] = useState(0);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [activeView, setActiveView] = useState("all");
-  const [totalTransactions, setTotalTransactions] = useState(0);
+  const [transactions, setTransactions] = useState([]);
   const [searchTransactions, setSearchTransactions] = useState([]);
-  const [totalAmount, setTotalAmount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const { error, showError } = useMessage();
 
   const getCategories = useCallback(async () => {
@@ -30,7 +29,9 @@ function Transactions() {
         setCategoryId(response.data.categories[0].id);
       }
     } catch (error) {
-      showError(error.response?.data?.message);
+      showError(
+        error.response?.data?.message || "Network failure. Please try again.",
+      );
     }
   }, [showError]);
 
@@ -41,80 +42,87 @@ function Transactions() {
     callFunction();
   }, [getCategories]);
 
+  // Always fetches the full, unfiltered list — used only for the header
+  // totals, so they reflect everything you've ever added, not just what
+  // the current search filters match.
+  const getTransactions = useCallback(async () => {
+    try {
+      const response = await api.get("/transactions");
+      setTransactions(response.data.transactions);
+    } catch (error) {
+      showError(
+        error.response?.data?.message || "Network failure. Please try again.",
+      );
+    }
+  }, [showError]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    getTransactions();
+  }, [getTransactions]);
+
+  const URLlocation = useLocation();
+  const params = new URLSearchParams(URLlocation.search);
+
+  const initialCategoryId = Number(params.get("categoryId")) || 0;
+
+  const [searchCategoryId, setSearchCategoryId] = useState(initialCategoryId);
+
+  // Simplified from the original 8-branch if/else chain — same query
+  // string is produced for every combination, just built in one place
+  // instead of one place per combination (which is what let `transactions`
+  // and `searchTransactions` drift out of sync before).
   const handleSearch = useCallback(async () => {
     try {
-      if (searchCategoryId !== 0 && startDate !== "" && endDate !== "") {
-        const response = await api.get(
-          `/transactions?categoryId=${searchCategoryId}&startDate=${startDate}&endDate=${endDate}`,
-        );
-        setSearchTransactions(response.data.transactions);
-      } else if (searchCategoryId !== 0 && startDate !== "" && endDate === "") {
-        const response = await api.get(
-          `/transactions?categoryId=${searchCategoryId}&startDate=${startDate}`,
-        );
-        setSearchTransactions(response.data.transactions);
-      } else if (searchCategoryId !== 0 && startDate === "" && endDate !== "") {
-        const response = await api.get(
-          `/transactions?categoryId=${searchCategoryId}&endDate=${endDate}`,
-        );
-        setSearchTransactions(response.data.transactions);
-      } else if (searchCategoryId === 0 && startDate !== "" && endDate !== "") {
-        const response = await api.get(
-          `/transactions?startDate=${startDate}&endDate=${endDate}`,
-        );
-        setSearchTransactions(response.data.transactions);
-      } else if (searchCategoryId !== 0 && startDate === "" && endDate === "") {
-        const response = await api.get(
-          `/transactions?categoryId=${searchCategoryId}`,
-        );
-        setSearchTransactions(response.data.transactions);
-      } else if (searchCategoryId === 0 && startDate !== "" && endDate === "") {
-        const response = await api.get(`/transactions?startDate=${startDate}`);
-        setSearchTransactions(response.data.transactions);
-      } else if (searchCategoryId === 0 && startDate === "" && endDate !== "") {
-        const response = await api.get(`/transactions?endDate=${endDate}`);
-        setSearchTransactions(response.data.transactions);
-      } else {
-        const response = await api.get("/transactions");
-        setTransactions(response.data.transactions);
-        setSearchTransactions(response.data.transactions);
+      const queryParams = new URLSearchParams();
+      if (searchCategoryId !== 0) {
+        queryParams.append("categoryId", searchCategoryId);
       }
+      if (startDate !== "") {
+        queryParams.append("startDate", startDate);
+      }
+      if (endDate !== "") {
+        queryParams.append("endDate", endDate);
+      }
+      const query = queryParams.toString();
+      const response = await api.get(
+        `/transactions${query ? `?${query}` : ""}`,
+      );
+      setSearchTransactions(response.data.transactions);
     } catch (error) {
-      showError(error.response?.data?.message);
+      showError(
+        error.response?.data?.message || "Network failure. Please try again.",
+      );
     }
   }, [searchCategoryId, startDate, endDate, showError]);
 
+  const filteredTransactions = useMemo(() => {
+    return searchTransactions.filter((transaction) =>
+      activeView === "all" ? true : transaction.type === activeView,
+    );
+  }, [searchTransactions, activeView]);
+
+  const totalTransactions = transactions.length;
+
+  const totalAmount = useMemo(() => {
+    return transactions.reduce(
+      (sum, transaction) => sum + Number(transaction.amount),
+      0,
+    );
+  }, [transactions]);
+
   useEffect(() => {
     const callFun = async () => {
+      setLoading(true);
       await handleSearch();
+      setLoading(false);
     };
     callFun();
   }, [handleSearch]);
 
-  useEffect(() => {
-    const transactionsSummary = () => {
-      let total = 0;
-      let amount = 0;
-      transactions.forEach((transaction) => {
-        total += 1;
-        amount += Number(transaction.amount);
-      });
-      setTotalTransactions(total);
-      setTotalAmount(amount);
-    };
-    const filterTransactions = async () => {
-      const result = transactions.filter((transaction) => {
-        return activeView !== "all" ? transaction.type === activeView : true;
-      });
-      setSearchTransactions(result);
-    };
-    filterTransactions();
-    transactionsSummary();
-  }, [transactions, activeView]);
-
   const addTransaction = async () => {
     try {
-      console.log(categoryId);
+      setSubmitting(true);
       await api.post("/transactions", {
         categoryId,
         amount,
@@ -126,8 +134,13 @@ function Transactions() {
       setDate("");
       setDescription("");
       await handleSearch();
+      await getTransactions();
     } catch (error) {
-      showError(error.response?.data?.message);
+      showError(
+        error.response?.data?.message || "Network failure. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -139,14 +152,23 @@ function Transactions() {
       if (isConfirmed) {
         await api.delete(`/transactions/${id}`);
         await handleSearch();
+        await getTransactions();
       }
     } catch (error) {
-      showError(error.response?.data?.message);
+      showError(
+        error.response?.data?.message || "Network failure. Please try again.",
+      );
     }
   };
 
   const editTransaction = (transaction) => {
-    const formattedDate = transaction.date.slice(0, 16);
+    // Was transaction.date, which doesn't exist on the object your table
+    // renders (transaction_date) — that mismatch would throw on click.
+    const formattedDate = (
+      transaction.transaction_date ||
+      transaction.date ||
+      ""
+    ).slice(0, 16);
     setId(transaction.id);
     setCategoryId(transaction.categoryId);
     setAmount(transaction.amount);
@@ -154,8 +176,17 @@ function Transactions() {
     setDescription(transaction.note);
   };
 
+  const cancelEdit = () => {
+    setId(0);
+    setCategoryId(categories.length > 0 ? categories[0].id : 0);
+    setAmount(0);
+    setDate("");
+    setDescription("");
+  };
+
   const updateTransaction = async () => {
     try {
+      setSubmitting(true);
       await api.put(`/transactions/${id}`, {
         categoryId,
         amount,
@@ -168,8 +199,13 @@ function Transactions() {
       setDate("");
       setDescription("");
       await handleSearch();
+      await getTransactions();
     } catch (error) {
-      showError(error.response?.data?.message);
+      showError(
+        error.response?.data?.message || "Network failure. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -186,7 +222,7 @@ function Transactions() {
 
   return (
     <>
-      <header>
+      <header className="tp-header">
         <h1>Transactions</h1>
       </header>
 
@@ -197,8 +233,17 @@ function Transactions() {
           page="transactions"
         />
         <main className="transactions-page">
-          <p>{totalTransactions} transactions</p>
-          <p>&#8377; {totalAmount} Total</p>
+          <div className="tp-stats">
+            <div className="tp-stat">
+              <span>Transactions</span>
+              <strong>{totalTransactions}</strong>
+            </div>
+            <div className="tp-stat">
+              <span>Total</span>
+              <strong>₹ {totalAmount}</strong>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="transaction-form">
             <div className="form-group">
               <label htmlFor="date">Date</label>
@@ -255,18 +300,38 @@ function Transactions() {
               </select>
             </div>
 
-            <button className="submit-btn" type="submit">
-              {id ? "Update Transaction" : "Add Transaction"}
+            <button className="submit-btn" type="submit" disabled={submitting}>
+              {id
+                ? submitting
+                  ? "Updating..."
+                  : "Update Transaction"
+                : submitting
+                  ? "Adding..."
+                  : "Add Transaction"}
             </button>
+
+            {id > 0 && (
+              <button type="button" className="cancel-btn" onClick={cancelEdit}>
+                Cancel
+              </button>
+            )}
           </form>
 
           {error && <p className="error">{error}</p>}
 
-          {transactions.length === 0 ? (
-            <p>No transactions added.</p>
+          {loading ? (
+            <div className="loading">
+              <div className="spinner"></div>
+              <p>Loading transactions...</p>
+            </div>
+          ) : transactions.length === 0 ? (
+            <p className="tp-empty">No transactions added yet.</p>
+          ) : searchTransactions.length === 0 ? (
+            <p className="tp-empty">
+              No transactions found for the selected filters.
+            </p>
           ) : (
             <>
-              <h2>{activeView}</h2>
               <div className="filters-card">
                 <div className="form-group">
                   <label htmlFor="searchCategory">Search transactions</label>
@@ -315,8 +380,10 @@ function Transactions() {
                 </div>
               </div>
 
-              {searchTransactions.length == 0 ? (
-                <p>No transactions found for the selected filters.</p>
+              {filteredTransactions.length === 0 ? (
+                <p className="tp-empty">
+                  No {activeView} transactions match your filters.
+                </p>
               ) : (
                 <table className="transaction-table">
                   <thead>
@@ -331,7 +398,7 @@ function Transactions() {
                   </thead>
 
                   <tbody>
-                    {searchTransactions.map((transaction) => {
+                    {filteredTransactions.map((transaction) => {
                       return (
                         <tr key={transaction.id}>
                           <td>{transaction.transaction_date}</td>
@@ -381,7 +448,10 @@ function Transactions() {
               )}
             </>
           )}
-          <Link to="/dashboard">Back to home</Link>
+
+          <Link to="/dashboard" className="tp-back-link">
+            Back to home
+          </Link>
         </main>
       </div>
     </>
