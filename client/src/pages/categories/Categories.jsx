@@ -511,8 +511,9 @@ function Categories() {
           >
             <h2>Delete "{confirmDeleteCategory.name}"?</h2>
             <p className="cp-modal-copy">
-              This can't be undone. Existing transactions in this category won't
-              be deleted, but they'll lose their category label.
+              This can't be undone.This category can only be deleted if it has
+              no associated transactions. Please make sure all transactions
+              using this category have been deleted first.
             </p>
             <div className="cp-modal-actions">
               <button
