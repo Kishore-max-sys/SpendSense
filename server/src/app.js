@@ -27,6 +27,6 @@ app.use("/api/dashboard",authMiddleware,dashboardRouter);
 
 app.use(errorHandler);
 
-app.listen(process.env.PORT,"0.0.0.0",()=>{
+app.listen(process.env.PORT||5000,"0.0.0.0",()=>{
     console.log(`Server is running on the port ${process.env.PORT}`);
 });
