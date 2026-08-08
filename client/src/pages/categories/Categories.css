@@ -43,52 +43,449 @@ body {
   box-sizing: border-box;
 }
 
-header {
-  max-width: 880px;
+/* Header — title + compact inline stats, replacing the three big stat
+   cards that used to eat a whole extra section */
+.cp-header {
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 3rem 1.75rem 0;
+  padding: 1.75rem 1.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
   font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-header h1 {
+.cp-header h1 {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
-  font-size: 28px;
+  font-size: 26px;
   color: var(--ink);
   margin: 0;
   letter-spacing: -0.01em;
 }
 
-.categories-page {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 1.75rem 1.75rem 4rem;
-  font-family: 'Inter', sans-serif;
+.cp-header-stats {
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.cp-header-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fffefb;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  color: var(--ink-soft);
+}
+
+.cp-header-stats strong {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
   color: var(--ink);
 }
 
-/* Form card */
-.category-form {
+.cp-header-stat-income {
+  border-color: #cfe4d8 !important;
+}
+
+.cp-header-stat-income strong {
+  color: var(--income) !important;
+}
+
+.cp-header-stat-expense {
+  border-color: #ecd5c6 !important;
+}
+
+.cp-header-stat-expense strong {
+  color: var(--expense) !important;
+}
+
+.cp-layout {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1.75rem;
+  padding: 1.75rem 1.75rem 4rem;
+  align-items: start;
+}
+
+/* Sidebar + Back to home, grouped in one column */
+.cp-sidebar-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: sticky;
+  top: 1.75rem;
+}
+
+.cp-back-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink) !important;
+  background: #fffefb;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 14px;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.cp-back-link:hover {
+  border-color: var(--gold);
+  color: var(--gold) !important;
+}
+
+.categories-page {
+  font-family: 'Inter', sans-serif;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  min-width: 0;
+}
+
+/* Toolbar — search + sort + add, merged into one row instead of a
+   separate filter block sitting above a separate form block */
+.cp-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cp-search {
+  flex: 1;
+  min-width: 180px;
+  background: #fffefb;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  color: var(--ink);
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.cp-search:hover {
+  border-color: #d8cba4;
+}
+
+.cp-search:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px var(--gold-soft);
+}
+
+.cp-sort-btn {
+  background: #fffefb;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.cp-sort-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.cp-add-btn {
+  padding: 10px 18px;
+  margin-left: auto;
+}
+
+.cp-no-results {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* Error — fixed toast instead of inline block, so it overlays the page
+   instead of pushing content down when it appears/disappears */
+.error {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  max-width: 360px;
+  background: var(--error-bg);
+  border: 1px solid #f0c6c2;
+  color: var(--error);
+  font-size: 13.5px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  margin: 0;
+  box-shadow: 0 16px 40px rgba(179, 38, 30, 0.18);
+  z-index: 100;
+  animation: cp-toast-in 0.2s ease;
+}
+
+@keyframes cp-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  padding: 3rem 0;
+}
+
+.spinner {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--gold);
+  animation: cp-spin 0.8s linear infinite;
+}
+
+@keyframes cp-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Empty state */
+.cp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.5rem 1rem;
   background: #fffefb;
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 1.75rem;
-  display: flex;
-  align-items: flex-end;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 10px 26px rgba(20, 33, 29, 0.06);
+  gap: 0.5rem;
 }
 
-.form-group {
+.cp-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--gold-soft);
+  color: var(--gold) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.cp-empty-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink);
+  margin: 0;
+}
+
+.cp-empty-copy {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  max-width: 300px;
+  line-height: 1.5;
+  margin: 0 0 0.75rem;
+}
+
+/* Category card grid, with its own section label so it doesn't sit
+   directly against the toolbar above it */
+.cp-grid-section {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-width: 180px;
+  gap: 1rem;
 }
 
-.form-group label {
+.cp-section-label {
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.1rem;
+}
+
+.category-card {
+  background: #fffefb;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 8px 20px rgba(20, 33, 29, 0.045);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.15s ease;
+  cursor: pointer;
+}
+
+.category-card:hover {
+  border-color: #d8cba4;
+  box-shadow: 0 14px 30px rgba(20, 33, 29, 0.08);
+  transform: translateY(-1px);
+}
+
+.category-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.category-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.edit-btn,
+.delete-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fffefb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ink-soft) !important;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.edit-btn svg,
+.delete-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: inherit !important;
+}
+
+.edit-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold) !important;
+}
+
+.delete-btn:hover {
+  border-color: #f0c6c2;
+  color: var(--error) !important;
+  background: var(--error-bg);
+}
+
+.category-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+
+.category-type {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.03em;
+  margin: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.category-type-income {
+  background: var(--income-bg);
+  color: var(--income) !important;
+}
+
+.category-type-expense {
+  background: var(--expense-bg);
+  color: var(--expense) !important;
+}
+
+/* Add/Edit + Delete-confirm modals */
+.cp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 33, 29, 0.5);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 50;
+}
+
+.cp-modal {
+  width: 100%;
+  max-width: 400px;
+  background: #fffefb;
+  border-radius: 20px;
+  padding: 1.9rem 1.9rem 1.75rem;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.3);
+}
+
+.cp-modal h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--ink);
+  margin: 0 0 1.25rem;
+}
+
+.cp-modal-copy {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: -0.5rem 0 1.5rem;
+}
+
+.cp-modal .category-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cp-modal .form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.1rem;
+}
+
+.cp-modal .form-group label {
   font-size: 11px;
   font-family: 'IBM Plex Mono', monospace;
   letter-spacing: 0.09em;
@@ -97,8 +494,8 @@ header h1 {
   margin-bottom: 8px;
 }
 
-.form-group input,
-.form-group select {
+.cp-modal .form-group input,
+.cp-modal .form-group select {
   width: 100%;
   background: #fdfcf9;
   border: 1.5px solid var(--border);
@@ -111,23 +508,29 @@ header h1 {
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.form-group input:hover,
-.form-group select:hover {
-  border-color: #d8cba4;
-}
-
-.form-group input:focus,
-.form-group select:focus {
+.cp-modal .form-group input:focus,
+.cp-modal .form-group select:focus {
   border-color: var(--gold);
   box-shadow: 0 0 0 4px var(--gold-soft);
 }
 
-.form-group select:disabled {
+.cp-modal .form-group select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
+.cp-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 0.25rem;
+}
+
 .submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   background: var(--ink);
   color: var(--gold);
   border: none;
@@ -143,157 +546,72 @@ header h1 {
   transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-.submit-btn:hover {
+.submit-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.15);
 }
 
-/* Error */
-.error {
-  background: var(--error-bg);
-  border: 1px solid #f0c6c2;
-  color: var(--error);
-  font-size: 13.5px;
-  padding: 11px 14px;
-  border-radius: 11px;
-  margin: 0 0 1.5rem;
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-/* Table */
-.category-table {
-  width: 100%;
-  border-collapse: collapse;
+.cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: #fffefb;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 10px 26px rgba(20, 33, 29, 0.06);
-}
-
-.category-table thead {
-  background: var(--ink);
-}
-
-.category-table th {
-  text-align: left;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  font-weight: 500;
-  color: var(--gold);
-  padding: 13px 18px;
-}
-
-.category-table td {
-  padding: 13px 18px;
-  font-size: 14px;
-  color: var(--ink);
-  border-top: 1px solid var(--border);
-}
-
-.category-table tbody tr:hover {
-  background: var(--linen);
-}
-
-.category-table td.income,
-.category-table td.expense {
-  text-transform: capitalize;
-}
-
-.category-table td.income::before,
-.category-table td.expense::before {
-  content: "";
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-
-.category-table td.income {
-  color: var(--income);
-}
-
-.category-table td.income::before {
-  background: var(--income);
-}
-
-.category-table td.expense {
-  color: var(--expense);
-}
-
-.category-table td.expense::before {
-  background: var(--expense);
-}
-
-.edit-btn,
-.delete-btn {
+  color: var(--ink-soft);
   border: 1.5px solid var(--border);
-  background: #fffefb;
-  border-radius: 9px;
-  font-size: 12.5px;
+  border-radius: 11px;
+  padding: 12px 18px;
+  font-size: 14px;
   font-weight: 600;
-  padding: 7px 13px;
+  font-family: 'Inter', sans-serif;
   cursor: pointer;
-  margin-right: 8px;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
 }
 
-.edit-btn {
-  color: var(--ink-soft);
-}
-
-.edit-btn:hover {
-  border-color: var(--gold);
-  color: var(--gold);
-}
-
-.delete-btn {
+.cancel-btn:hover {
+  border-color: var(--error);
   color: var(--error);
-  border-color: #f0c6c2;
 }
 
-.delete-btn:hover {
-  background: var(--error-bg);
+.delete-btn-solid {
+  background: var(--error);
+  color: #fff;
+  border: none;
+  border-radius: 11px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
 }
 
-/* Back link */
-.categories-page > a {
-  display: inline-block;
-  margin-top: 1.75rem;
-  font-size: 13.5px;
-  color: var(--ink-soft);
-  text-decoration: none;
+.delete-btn-solid:hover {
+  filter: brightness(1.1);
 }
 
-.categories-page > a:hover {
-  color: var(--gold);
-  text-decoration: underline;
+@media (max-width: 860px) {
+  .cp-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cp-sidebar-col {
+    position: static;
+  }
 }
 
 @media (max-width: 560px) {
-  .category-form {
-    flex-direction: column;
-    align-items: stretch;
+  .category-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 
-  .submit-btn {
+  .cp-add-btn {
+    margin-left: 0;
     width: 100%;
+    justify-content: center;
   }
-
-  .category-table {
-    display: block;
-    overflow-x: auto;
-  }
-}
-
-.cp-layout {
-  max-width: 1180px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 1.75rem;
-  padding: 1.75rem 1.75rem 4rem;
-  align-items: start;
 }
