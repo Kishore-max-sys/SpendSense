@@ -24,7 +24,7 @@ const registerUser=async ({name,email,password,confirmPassword}) =>{
         throw new AppError("User Already Exists",409);
     }
     if(password!==confirmPassword){
-        throw new AppError("Passwords does not match",400);
+        throw new AppError("Password and confirm password must match.",400);
     }
     if(password.length<8){
         throw new AppError("Password must contain atleast 8 characters.",400);

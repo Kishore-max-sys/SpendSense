@@ -2,7 +2,7 @@ import api from "../../api/axios";
 import { useEffect, useState } from "react";
 import monthFinder from "../../utils/monthFinder";
 import Sidebar from "../../components/Sidebar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { User, PieChart, TrendingUp } from "lucide-react";
 import { Line, Pie } from "react-chartjs-2";
 import {
@@ -30,7 +30,7 @@ ChartJS.register(
   Legend,
 );
 
-// New: a color set for the pie chart, kept within the app's existing
+// A color set for the pie chart, kept within the app's existing
 // gold/rust/forest/brown palette rather than introducing new hues.
 const categoryColors = [
   "#c9a15a",
@@ -49,7 +49,10 @@ function Dashboard() {
   const [expense, setExpense] = useState(0);
   const [categories, setCategories] = useState([]);
   const [summary, setSummary] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Was `useState(false)` — with false, the page rendered one frame of
+  // "₹0 balance" / empty charts before the fetch effect even started,
+  // since the effect only runs after the first paint.
+  const [loading, setLoading] = useState(true);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [chartData, setChartData] = useState({
     labels: [],
@@ -61,7 +64,7 @@ function Dashboard() {
   const [years, setYears] = useState([]);
   const { error, showError } = useMessage();
 
-  // New: drives which sidebar panel (Category / Trend) is shown.
+  // Drives which sidebar panel (Category / Trend) is shown.
   const [activeView, setActiveView] = useState("category");
 
   useEffect(() => {
@@ -138,10 +141,20 @@ function Dashboard() {
     fetchAll();
   }, [showError]);
 
+  const navigate = useNavigate();
+  const navigateTransactions = (value) => {
+    navigate(`/transactions?activeView=${value}`);
+  };
+
   useEffect(() => {
     const getTotalExpenses = () => {
+      // Was `sum + category.expense`. If the API serializes `expense` as a
+      // string (common with SQL decimal columns over JSON), `+` silently
+      // does string concatenation instead of addition the moment one
+      // operand is a string, producing garbled totals like "0120.5040.00"
+      // instead of 160.50. Number(...) guarantees real addition.
       const total = categories.reduce(
-        (sum, category) => sum + category.expense,
+        (sum, category) => sum + Number(category.expense),
         0,
       );
       setTotalExpenses(total);
@@ -155,21 +168,22 @@ function Dashboard() {
       const uniqueYears = [
         ...new Set(summary.map((item) => item.date.split("-")[0])),
       ];
-      setYears(uniqueYears.sort((a, b) => b.localeCompare(a)));
+      return uniqueYears.sort((a, b) => b.localeCompare(a));
     };
 
-    const getChartData = () => {
-      const data = {
-        labels: summary
-          .filter((item) => item.date.split("-")[0] === filterYear)
-          .map((item) => monthFinder(Number(item.date.split("-")[1]))),
+    const getChartData = (year) => {
+      const yearRows = summary.filter(
+        (item) => item.date.split("-")[0] === year,
+      );
 
+      const data = {
+        labels: yearRows.map((item) =>
+          monthFinder(Number(item.date.split("-")[1])),
+        ),
         datasets: [
           {
             label: "Income",
-            data: summary
-              .filter((item) => item.date.split("-")[0] === filterYear)
-              .map((item) => item.income),
+            data: yearRows.map((item) => item.income),
             borderColor: "green",
             backgroundColor: "green",
             pointRadius: 6,
@@ -177,9 +191,7 @@ function Dashboard() {
           },
           {
             label: "Expense",
-            data: summary
-              .filter((item) => item.date.split("-")[0] === filterYear)
-              .map((item) => item.expense),
+            data: yearRows.map((item) => item.expense),
             borderColor: "red",
             backgroundColor: "red",
             pointRadius: 6,
@@ -190,12 +202,27 @@ function Dashboard() {
       setChartData(data);
     };
 
-    getYears();
-    getChartData();
+    const uniqueYears = getYears();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setYears(uniqueYears);
+
+    // Was hardcoded to `filterYear` (which defaults to today's real-world
+    // year). If your data doesn't include the current year, the chart
+    // rendered empty by default even though older data existed. Now it
+    // falls back to the most recent year that actually has data.
+    const yearToShow = uniqueYears.includes(filterYear)
+      ? filterYear
+      : uniqueYears[0];
+
+    if (yearToShow && yearToShow !== filterYear) {
+      setFilterYear(yearToShow);
+    } else {
+      getChartData(filterYear);
+    }
   }, [summary, filterYear]);
 
-  // New: derived from your existing `categories` state — not stored,
-  // just recomputed on render like a normal variable.
+  // Derived from your existing `categories` state — not stored, just
+  // recomputed on render like a normal variable.
   const pieData = {
     labels: categories.map((category) => category.name),
     datasets: [
@@ -251,10 +278,14 @@ function Dashboard() {
         </div>
       )}
 
-      {error && <p className="error">{error}</p>}
-
-      {!loading && !error && (
+      {/* Was `{!loading && !error && (...)}` — a single failed request
+          (e.g. just the balance call) hid the entire dashboard, including
+          data from the other four calls that loaded fine. Error now shows
+          as a banner alongside whatever content did load. */}
+      {!loading && (
         <>
+          {error && <p className="error">{error}</p>}
+
           <header className="dp-header">
             <h1 className="dp-brand">
               Spend<span>Sense</span>
@@ -278,12 +309,22 @@ function Dashboard() {
               </div>
 
               <div className="summary-cards">
-                <div className="income-card">
+                <div
+                  className="income-card"
+                  onClick={() => {
+                    navigateTransactions("income");
+                  }}
+                >
                   <h3>Income</h3>
                   <h2>₹ {income}</h2>
                 </div>
 
-                <div className="expense-card">
+                <div
+                  className="expense-card"
+                  onClick={() => {
+                    navigateTransactions("expense");
+                  }}
+                >
                   <h3>Expense</h3>
                   <h2>₹ {expense}</h2>
                 </div>

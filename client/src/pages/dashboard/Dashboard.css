@@ -80,8 +80,8 @@ body {
   font-size: 13.5px;
   padding: 12px 15px;
   border-radius: 12px;
-  max-width: 500px;
-  margin: 3rem auto;
+  max-width: 1180px;
+  margin: 0 auto 1.5rem;
 }
 
 /* Header */
@@ -201,6 +201,14 @@ body {
   border-radius: 16px;
   padding: 1.4rem 1.5rem;
   box-shadow: 0 10px 26px rgba(20, 33, 29, 0.06);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.income-card:hover,
+.expense-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(20, 33, 29, 0.1);
 }
 
 .income-card {

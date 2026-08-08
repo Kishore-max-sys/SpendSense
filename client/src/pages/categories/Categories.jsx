@@ -108,9 +108,9 @@ function Categories() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [sort, setSort] = useState("asc");
-  // New: controls the add/edit form modal instead of an always-visible form.
+  // Controls the add/edit form modal instead of an always-visible form.
   const [formOpen, setFormOpen] = useState(false);
-  // New: holds the category pending deletion, replacing window.confirm.
+  // Holds the category pending deletion, replacing window.confirm.
   const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(null);
   const navigate = useNavigate();
   const { error, showError } = useMessage();
@@ -154,7 +154,7 @@ function Categories() {
     try {
       setSubmitting(true);
       await api.post("/categories", {
-        name,
+        name: name.trim(),
         type,
       });
       setName("");
@@ -183,15 +183,22 @@ function Categories() {
     }
   };
 
+  // Was missing `setType(category.type)`. The Type field in the edit
+  // modal is disabled (you can't change a category's type after
+  // creation), but since `type` state wasn't synced here, the disabled
+  // dropdown kept showing whatever was left over from your last *add* —
+  // e.g. editing an income category could still show "Expense".
   const editCategory = (category) => {
     setId(category.id);
     setName(category.name);
+    setType(category.type);
     setFormOpen(true);
   };
 
   const cancelEdit = () => {
     setId(0);
     setName("");
+    setType("expense");
     setFormOpen(false);
   };
 
@@ -199,9 +206,10 @@ function Categories() {
     try {
       setSubmitting(true);
       await api.put(`/categories/${id}`, {
-        name,
+        name: name.trim(),
       });
       setName("");
+      setType("expense");
       setId(0);
       setFormOpen(false);
       await getCategories();
@@ -437,6 +445,7 @@ function Categories() {
                   id="cname"
                   type="text"
                   autoFocus
+                  required
                   value={name}
                   onChange={(event) => {
                     setName(event.target.value);
