@@ -46,11 +46,11 @@ const deleteCategory=async (user_id,category_id) =>{
         throw new AppError("Category does not exists",404);
     }
     const transactions=await fetchTransactionsByCategory(user_id,category_id);
-    if(transactions.length===0){
-        await removeCategory(user_id,category_id);
-        return "Category removed successfully";
+    if(transactions.length!==0){
+        throw new AppError("Cannot delete category because it contains transactions",400);
     }
-    return "Cannot delete category because it contains transactions";
+    await removeCategory(user_id,category_id);
+    return "Category removed successfully";
 }
 
 module.exports={
