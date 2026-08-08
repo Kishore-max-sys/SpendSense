@@ -67,7 +67,7 @@ const fetchExpensesByCategory=async (user_id) =>{
 
 const fetchMonthlySummary=async (user_id) =>{
     const [rows]=await pool.execute(
-        `SELECT DATE_FORMAT(t.transaction_date,"%Y-%m") AS date,
+        `SELECT DATE_FORMAT(t.transaction_date,'%Y-%m') AS date,
                 SUM(
                     CASE
                         WHEN c.type=?
@@ -84,7 +84,7 @@ const fetchMonthlySummary=async (user_id) =>{
         JOIN categories c
             ON c.id=t.category_id
         WHERE t.user_id=?
-        GROUP BY DATE_FORMAT(t.transaction_date,"%Y-%m")`,
+        GROUP BY DATE_FORMAT(t.transaction_date,'%Y-%m')`,
         ["income","expense",user_id]
     );
     return rows;
