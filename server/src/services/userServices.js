@@ -45,7 +45,7 @@ const changePassword=async(userId,currentPassword,newPassword,confirmNewPassword
                 throw new AppError("Current password is incorrect.",400);
         }
         if(newPassword!==confirmNewPassword){
-                throw new AppError("Passwords does not match",400);
+                throw new AppError("Password and confirm password must match.",400);
         }
         if(newPassword.length<8){
                 throw new AppError("Password must contain atleast 8 characters.",400);
