@@ -165,9 +165,6 @@ function Transactions() {
     callFunction();
   }, [getCategories]);
 
-  // Always fetches the full, unfiltered list — used only for the header
-  // totals, so they reflect everything you've ever added, not just what
-  // the current search filters match.
   const getTransactions = useCallback(async () => {
     try {
       const response = await api.get("/transactions");
@@ -202,9 +199,6 @@ function Transactions() {
     setEndDate("");
   };
 
-  // Same query string is built for every filter combination in one place,
-  // instead of one branch per combination (which is what let `transactions`
-  // and `searchTransactions` drift out of sync before).
   const handleSearch = useCallback(async () => {
     try {
       const queryParams = new URLSearchParams();
@@ -320,9 +314,6 @@ function Transactions() {
   };
 
   const editTransaction = (transaction) => {
-    // Was transaction.date, which doesn't exist on the object this page
-    // renders (transaction_date) — that mismatch left the date field blank
-    // on every edit.
     const formattedDate = (transaction.transaction_date || "").slice(0, 16);
     setId(transaction.id);
     setCategoryId(transaction.categoryId);
@@ -378,6 +369,16 @@ function Transactions() {
     <>
       <header className="tp-header">
         <h1>Transactions</h1>
+        {!loading && transactions.length > 0 && (
+          <div className="tp-header-stats">
+            <span>
+              <strong>{totalTransactions}</strong> total
+            </span>
+            <span>
+              <strong>₹ {totalAmount}</strong> overall
+            </span>
+          </div>
+        )}
       </header>
 
       <div className="tp-layout">
@@ -393,17 +394,6 @@ function Transactions() {
         </div>
 
         <main className="transactions-page">
-          <div className="tp-stats">
-            <div className="tp-stat">
-              <span>Transactions</span>
-              <strong>{totalTransactions}</strong>
-            </div>
-            <div className="tp-stat">
-              <span>Total</span>
-              <strong>₹ {totalAmount}</strong>
-            </div>
-          </div>
-
           {error && <p className="error">{error}</p>}
 
           <div className="tp-toolbar">
@@ -530,16 +520,13 @@ function Transactions() {
             </div>
           ) : (
             <>
-              <div className="tp-stats">
-                <div className="tp-stat">
-                  <span>{hasActiveFilters ? "Filtered" : "Showing"}</span>
-                  <strong>{totalFilteredTransactions}</strong>
-                </div>
-                <div className="tp-stat">
-                  <span>Filtered Total</span>
-                  <strong>₹ {totalFilteredAmount}</strong>
-                </div>
-              </div>
+              <p className="tp-filtered-note">
+                <strong>{totalFilteredTransactions}</strong>{" "}
+                {totalFilteredTransactions === 1
+                  ? "transaction"
+                  : "transactions"}{" "}
+                · <strong>₹ {totalFilteredAmount}</strong>
+              </p>
 
               <div className="tp-statement">
                 {groupedTransactions.map((group) => (
