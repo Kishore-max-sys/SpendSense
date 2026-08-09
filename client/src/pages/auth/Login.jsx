@@ -24,7 +24,7 @@ function Login() {
       });
       if (response.data.success === true) {
         login(response.data.token);
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       } else {
         showError("Invalid email or password");
       }

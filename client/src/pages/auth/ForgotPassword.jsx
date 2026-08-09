@@ -19,6 +19,7 @@ function ForgotPassword() {
         state: {
           email,
         },
+        replace: true,
       });
     } catch (error) {
       showError(error.response?.data?.message);

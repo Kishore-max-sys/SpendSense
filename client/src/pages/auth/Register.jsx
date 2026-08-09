@@ -34,7 +34,7 @@ function Register() {
       setConfirmPassword("");
       if (response.data.success === true) {
         login(response.data.token);
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       }
     } catch (error) {
       showError(error.response?.data?.message);

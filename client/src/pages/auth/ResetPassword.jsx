@@ -26,7 +26,7 @@ function ResetPassword() {
       setNewPassword("");
       setConfirmNewPassword("");
       alert("Password changed successfully.");
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (error) {
       showError(error.response?.data?.message);
     }

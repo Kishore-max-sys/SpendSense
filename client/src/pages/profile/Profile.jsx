@@ -46,7 +46,7 @@ function Profile() {
     try {
       await api.delete("/users");
       logout();
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (error) {
       showError(
         error.response?.data?.message || "Network failure. Please try again.",
