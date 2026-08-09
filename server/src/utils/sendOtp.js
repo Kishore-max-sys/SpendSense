@@ -1,30 +1,34 @@
-const transporter=require("./transporter");
+const { Resend } = require("resend");
 
-const sendOtp=async(email,otp) =>{
-        await transporter.sendMail({
-                from:process.env.EMAIL_USER,
-                to:email,
-                subject:"SpendSense - Password Reset OTP",
-                html:`
-                        <h2>SpendSense</h2>
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-                        <p>Hello,</p>
+const sendOtp = async (email, otp) => {
+  await resend.emails.send({
+    // Resend's free tier requires this sender address unless you verify
+    // your own domain with them — swap once you've done that.
+    from: "SpendSense <onboarding@resend.dev>",
+    to: email,
+    subject: "SpendSense - Password Reset OTP",
+    html: `
+      <h2>SpendSense</h2>
 
-                        <p>We received a request to reset your password.</p>
+      <p>Hello,</p>
 
-                        <h1 style="letter-spacing:5px;color:#2563eb;">
-                        ${otp}
-                        </h1>
+      <p>We received a request to reset your password.</p>
 
-                        <p>This OTP is valid for 10 minutes.</p>
+      <h1 style="letter-spacing:5px;color:#2563eb;">
+      ${otp}
+      </h1>
 
-                        <p>If you didn't request this password reset, you can safely ignore this email.</p>
+      <p>This OTP is valid for 10 minutes.</p>
 
-                        <hr>
+      <p>If you didn't request this password reset, you can safely ignore this email.</p>
 
-                        <p>Expense Tracker Team</p>
-                `
-        });
-}
+      <hr>
 
-module.exports=sendOtp;
+      <p>Expense Tracker Team</p>
+    `,
+  });
+};
+
+module.exports = sendOtp;
