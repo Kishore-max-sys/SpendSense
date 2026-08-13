@@ -1,104 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
+import CategoryCard from "../../components/CategoryCard";
 import api from "../../api/axios";
 import useMessage from "../../hooks/useMessage";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-  ArrowLeft,
-  ShoppingCart,
-  Home,
-  Tv,
-  Film,
-  Smartphone,
-  Car,
-  HeartPulse,
-  GraduationCap,
-  Zap,
-  Dumbbell,
-  Gift,
-  ShieldCheck,
-  PiggyBank,
-  TrendingUp,
-  ShoppingBag,
-  Wallet,
-  Tag,
-} from "lucide-react";
+import { Plus, X, ArrowLeft, Tag } from "lucide-react";
 import "./Categories.css";
-
-// Maps a category name to a fitting icon by keyword. Falls back to a
-// generic icon based on type when nothing matches, so every category gets
-// an icon even if it's not one of the recognized keywords.
-const iconRules = [
-  {
-    keywords: ["grocery", "groceries", "food", "dining", "restaurant"],
-    Icon: ShoppingCart,
-  },
-  { keywords: ["rent", "housing", "hostel"], Icon: Home },
-  { keywords: ["netflix", "subscription", "streaming", "prime"], Icon: Tv },
-  { keywords: ["movie", "cinema", "entertainment"], Icon: Film },
-  { keywords: ["recharge", "mobile", "phone"], Icon: Smartphone },
-  {
-    keywords: ["fuel", "petrol", "transport", "travel", "uber", "taxi", "cab"],
-    Icon: Car,
-  },
-  {
-    keywords: ["medical", "health", "hospital", "doctor", "pharmacy"],
-    Icon: HeartPulse,
-  },
-  {
-    keywords: ["education", "school", "college", "course", "tuition"],
-    Icon: GraduationCap,
-  },
-  {
-    keywords: ["electricity", "utility", "utilities", "water", "bill"],
-    Icon: Zap,
-  },
-  { keywords: ["gym", "fitness", "workout"], Icon: Dumbbell },
-  { keywords: ["gift"], Icon: Gift },
-  { keywords: ["insurance"], Icon: ShieldCheck },
-  { keywords: ["saving", "savings"], Icon: PiggyBank },
-  { keywords: ["invest", "stock", "mutual fund"], Icon: TrendingUp },
-  { keywords: ["shopping", "clothes", "clothing"], Icon: ShoppingBag },
-  { keywords: ["salary", "wage", "paycheck", "income"], Icon: Wallet },
-];
-
-function getCategoryIcon(name, type) {
-  const lower = name.toLowerCase();
-  const match = iconRules.find((rule) =>
-    rule.keywords.some((keyword) => lower.includes(keyword)),
-  );
-  if (match) return match.Icon;
-  return type === "income" ? Wallet : Tag;
-}
-
-// Same palette used on the Dashboard pie chart, kept within the app's
-// existing gold/rust/forest/brown tones. Colored by category id (not by
-// position in the filtered/sorted list) so a category keeps the same
-// color no matter how you sort or search — an index-based color would
-// visibly shift around every time the list reorders.
-const categoryColors = [
-  "#c9a15a",
-  "#a6512f",
-  "#1f6f4f",
-  "#8b5e3c",
-  "#7a6f61",
-  "#94402a",
-  "#5c7d6b",
-  "#b98d46",
-];
-
-function getCategoryColor(id) {
-  return categoryColors[id % categoryColors.length];
-}
 
 function Categories() {
   const [categories, setCategories] = useState([]);
+  // New: category_id -> amount spent, merged in from the same endpoint
+  // your Dashboard page already uses. Needed so CategoryCard can compute
+  // a spent/limit percentage — your /categories endpoint only returns
+  // the limit itself, not how much has actually been spent.
+  const [spendByCategory, setSpendByCategory] = useState({});
   const [name, setName] = useState("");
   const [type, setType] = useState("expense");
+  const [monthlyLimit, setMonthlyLimit] = useState("");
   const [id, setId] = useState(0);
   const [searchCategory, setSearchCategory] = useState("");
   const [totalCategories, setTotalCategories] = useState(0);
@@ -108,9 +26,7 @@ function Categories() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [sort, setSort] = useState("asc");
-  // Controls the add/edit form modal instead of an always-visible form.
   const [formOpen, setFormOpen] = useState(false);
-  // Holds the category pending deletion, replacing window.confirm.
   const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(null);
   const navigate = useNavigate();
   const { error, showError } = useMessage();
@@ -129,12 +45,30 @@ function Categories() {
     }
   }, [showError]);
 
+  // New: fetches the same per-category spend data your Dashboard page
+  // already uses, so the budget progress bar has real numbers to show.
+  const getCategorySpend = useCallback(async () => {
+    try {
+      const response = await api.get("/dashboard/category-expense");
+      const map = {};
+      response.data.categories.forEach((entry) => {
+        map[entry.category_id] = entry.expense;
+      });
+      setSpendByCategory(map);
+    } catch (error) {
+      showError(
+        error.response?.data?.message || "Network failure. Please try again.",
+      );
+    }
+  }, [showError]);
+
   useEffect(() => {
     const callFun = async () => {
       await getCategories();
+      await getCategorySpend();
     };
     callFun();
-  }, [getCategories]);
+  }, [getCategories, getCategorySpend]);
 
   useEffect(() => {
     const categoriesSummary = () => {
@@ -156,9 +90,14 @@ function Categories() {
       await api.post("/categories", {
         name: name.trim(),
         type,
+        monthlyLimit:
+          type === "expense" && monthlyLimit !== ""
+            ? Number(monthlyLimit)
+            : null,
       });
       setName("");
       setType("expense");
+      setMonthlyLimit("");
       setFormOpen(false);
       await getCategories();
     } catch (error) {
@@ -183,15 +122,14 @@ function Categories() {
     }
   };
 
-  // Was missing `setType(category.type)`. The Type field in the edit
-  // modal is disabled (you can't change a category's type after
-  // creation), but since `type` state wasn't synced here, the disabled
-  // dropdown kept showing whatever was left over from your last *add* —
-  // e.g. editing an income category could still show "Expense".
   const editCategory = (category) => {
     setId(category.id);
     setName(category.name);
     setType(category.type);
+    // category.limit can be null/undefined for categories created before
+    // this feature existed — falling back to "" keeps the number input
+    // controlled instead of flipping to uncontrolled.
+    setMonthlyLimit(category.monthlyLimit ?? "");
     setFormOpen(true);
   };
 
@@ -199,6 +137,7 @@ function Categories() {
     setId(0);
     setName("");
     setType("expense");
+    setMonthlyLimit("");
     setFormOpen(false);
   };
 
@@ -207,9 +146,11 @@ function Categories() {
       setSubmitting(true);
       await api.put(`/categories/${id}`, {
         name: name.trim(),
+        monthlyLimit: monthlyLimit !== "" ? Number(monthlyLimit) : null,
       });
       setName("");
       setType("expense");
+      setMonthlyLimit("");
       setId(0);
       setFormOpen(false);
       await getCategories();
@@ -317,6 +258,7 @@ function Categories() {
                   setId(0);
                   setName("");
                   setType("expense");
+                  setMonthlyLimit("");
                   setFormOpen(true);
                 }}
               >
@@ -347,6 +289,7 @@ function Categories() {
                   setId(0);
                   setName("");
                   setType("expense");
+                  setMonthlyLimit("");
                   setFormOpen(true);
                 }}
               >
@@ -362,68 +305,16 @@ function Categories() {
                 {filteredCategories.length === 1 ? "category" : "categories"}
               </p>
               <div className="category-grid">
-                {filteredCategories.map((category) => {
-                  const CategoryIcon = getCategoryIcon(
-                    category.name,
-                    category.type,
-                  );
-                  const iconColor = getCategoryColor(category.id);
-                  return (
-                    <div
-                      key={category.id}
-                      onClick={() => {
-                        navigateTransactions(category.id);
-                      }}
-                      className="category-card"
-                    >
-                      <div className="category-card-top">
-                        <div
-                          className="category-icon"
-                          style={{
-                            background: `${iconColor}22`,
-                            color: iconColor,
-                          }}
-                        >
-                          <CategoryIcon size={18} />
-                        </div>
-                        <div className="category-card-actions">
-                          <button
-                            type="button"
-                            className="edit-btn"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              editCategory(category);
-                            }}
-                            aria-label={`Edit ${category.name}`}
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            className="delete-btn"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setConfirmDeleteCategory(category);
-                            }}
-                            aria-label={`Delete ${category.name}`}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="category-name">{category.name}</p>
-                      <p
-                        className={
-                          category.type === "income"
-                            ? "category-type category-type-income"
-                            : "category-type category-type-expense"
-                        }
-                      >
-                        {category.type}
-                      </p>
-                    </div>
-                  );
-                })}
+                {filteredCategories.map((category) => (
+                  <CategoryCard
+                    key={category.id}
+                    category={category}
+                    spent={spendByCategory[category.id] || 0}
+                    onClick={navigateTransactions}
+                    onEdit={editCategory}
+                    onDelete={setConfirmDeleteCategory}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -468,6 +359,23 @@ function Categories() {
                 </select>
               </div>
 
+              {type === "expense" && (
+                <div className="form-group">
+                  <label htmlFor="limit">Monthly Budget (optional)</label>
+                  <input
+                    id="limit"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="e.g. 5000"
+                    value={monthlyLimit}
+                    onChange={(event) => {
+                      setMonthlyLimit(event.target.value);
+                    }}
+                  />
+                </div>
+              )}
+
               <div className="cp-modal-actions">
                 <button
                   className="submit-btn"
@@ -475,10 +383,11 @@ function Categories() {
                   disabled={submitting}
                 >
                   {id ? (
-                    <>
-                      <Pencil size={15} />{" "}
-                      {submitting ? "Updating..." : "Update Category"}
-                    </>
+                    submitting ? (
+                      "Updating..."
+                    ) : (
+                      "Update Category"
+                    )
                   ) : (
                     <>
                       <Plus size={15} />{" "}
@@ -511,7 +420,7 @@ function Categories() {
           >
             <h2>Delete "{confirmDeleteCategory.name}"?</h2>
             <p className="cp-modal-copy">
-              This can't be undone.This category can only be deleted if it has
+              This can't be undone. This category can only be deleted if it has
               no associated transactions. Please make sure all transactions
               using this category have been deleted first.
             </p>
