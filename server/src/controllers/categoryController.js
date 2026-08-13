@@ -2,9 +2,9 @@ const categoryServices=require("../services/categoryServices");
 
 const createCategory=async (req,res,next) =>{
     try{
-        const {name,type}=req.body;
+        const {name,type,monthlyLimit}=req.body;
         const user_id=req.user.id;
-        const message=await categoryServices.createCategory(user_id,name,type);
+        const message=await categoryServices.createCategory(user_id,name,type,monthlyLimit);
         res.status(201).json({
             success:true,
             message
@@ -34,8 +34,8 @@ const updateCategory=async (req,res,next) =>{
     try{
         const user_id=req.user.id;
         const category_id=req.params.id;
-        const {name}=req.body;
-        const message=await categoryServices.updateCategory(user_id,category_id,name);
+        const {name,monthlyLimit}=req.body;
+        const message=await categoryServices.updateCategory(user_id,category_id,name,monthlyLimit);
         res.status(200).json({
             success:true,
             message
