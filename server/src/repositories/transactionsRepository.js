@@ -11,7 +11,7 @@ const insertTransaction=async (user_id,category_id,amount,note,transaction_date)
 
 const fetchTransactions=async (user_id) =>{
     const [rows]=await pool.execute(
-        `SELECT t.id,t.category_id,c.name,c.type,t.amount,t.note,t.transaction_date
+        `SELECT t.id,t.category_id AS categoryId,c.name,c.type,t.amount,t.note,t.transaction_date
         FROM transactions t
         JOIN categories c
             ON c.id=t.category_id
@@ -55,7 +55,7 @@ const removeTransaction=async (transaction_id,user_id) =>{
 
 const fetchTransactionsBetweenDates=async (user_id,start_date,end_date) =>{
     const [rows]=await pool.execute(
-        `SELECT t.id,c.name,c.type,t.amount,t.note,t.transaction_date
+        `SELECT t.id,t.category_id AS categoryId,c.name,c.type,t.amount,t.note,t.transaction_date
         FROM transactions t
         JOIN categories c
             ON c.id=t.category_id
@@ -68,7 +68,7 @@ const fetchTransactionsBetweenDates=async (user_id,start_date,end_date) =>{
 
 const fetchTransactionsByCategory=async (user_id,category_id) =>{
     const [rows]=await pool.execute(
-        `SELECT t.id,c.name,c.type,t.amount,t.note,t.transaction_date
+        `SELECT t.id,t.category_id AS categoryId,c.name,c.type,t.amount,t.note,t.transaction_date
         FROM transactions t
         JOIN categories c
             ON c.id=t.category_id
@@ -81,7 +81,7 @@ const fetchTransactionsByCategory=async (user_id,category_id) =>{
 
 const fetchTransactionsBetweenDatesByCategory=async (user_id,category_id,start_date,end_date) => {
     const [rows]=await pool.execute(
-        `SELECT t.id,c.name,c.type,t.amount,t.note,t.transaction_date
+        `SELECT t.id,t.category_id AS categoryId,c.name,c.type,t.amount,t.note,t.transaction_date
         FROM transactions t
         JOIN categories c
             ON c.id=t.category_id
@@ -104,7 +104,7 @@ const removeTransactionsByUser=async (user_id) =>{
 
 const fetchTransactionsByStartDate=async (user_id,start_date) =>{
     const [rows]=await pool.execute(
-        `SELECT t.id,c.name,c.type,t.amount,t.note,t.transaction_date
+        `SELECT t.id,t.category_id AS categoryId,c.name,c.type,t.amount,t.note,t.transaction_date
         FROM transactions t
         JOIN categories c
             ON c.id=t.category_id
@@ -117,7 +117,7 @@ const fetchTransactionsByStartDate=async (user_id,start_date) =>{
 
 const fetchTransactionsByStartDateByCategory=async (user_id,category_id,start_date) =>{
     const [rows]=await pool.execute(
-        `SELECT t.id,c.name,c.type,t.amount,t.note,t.transaction_date
+        `SELECT t.id,t.category_id AS categoryId,c.name,c.type,t.amount,t.note,t.transaction_date
         FROM transactions t
         JOIN categories c
             ON c.id=t.category_id
@@ -131,7 +131,7 @@ const fetchTransactionsByStartDateByCategory=async (user_id,category_id,start_da
 
 const fetchTransactionsByEndDate=async (user_id,end_date) =>{
     const [rows]=await pool.execute(
-        `SELECT t.id,c.name,c.type,t.amount,t.note,t.transaction_date
+        `SELECT t.id,t.category_id AS categoryId,c.name,c.type,t.amount,t.note,t.transaction_date
         FROM transactions t
         JOIN categories c
             ON c.id=t.category_id
@@ -144,7 +144,7 @@ const fetchTransactionsByEndDate=async (user_id,end_date) =>{
 
 const fetchTransactionsByEndDateByCategory=async (user_id,category_id,end_date) =>{
     const [rows]=await pool.execute(
-        `SELECT t.id,c.name,c.type,t.amount,t.note,t.transaction_date
+        `SELECT t.id,t.category_id AS categoryId,c.name,c.type,t.amount,t.note,t.transaction_date
         FROM transactions t
         JOIN categories c
             ON c.id=t.category_id
