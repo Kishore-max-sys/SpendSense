@@ -13,12 +13,13 @@ const {
     fetchTransactionsByCategory
 }=require("../repositories/transactionsRepository");
 
-const createCategory=async (user_id,name,type) =>{
+const createCategory=async (user_id,name,type,limit) =>{
     const category=await fetchCategoryByName(user_id,name);
     if(category){
         throw new AppError("Category already exists",404);
     }
-    await insertCategory(user_id,name,type);
+    const monthlyLimit=limit===""?null:Number(limit);
+    await insertCategory(user_id,name,type,monthlyLimit);
     return "Category created successfully";
 }
 
@@ -27,7 +28,7 @@ const getCategories=async(user_id) =>{
     return categories;
 };
 
-const updateCategory=async (user_id,category_id,name) =>{
+const updateCategory=async (user_id,category_id,name,limit) =>{
     const categoryExists=await fetchCategoryById(category_id,user_id);
     if(!categoryExists){
         throw new AppError("Category does not exists",404);
@@ -36,7 +37,8 @@ const updateCategory=async (user_id,category_id,name) =>{
     if(category && category.id!==Number(category_id)){
         throw new AppError("Catgeory already exists",409);
     }
-    await modifyCategory(user_id,category_id,name);
+    const monthlyLimit=limit===""?null:Number(limit);
+    await modifyCategory(user_id,category_id,name,monthlyLimit);
     return "Category updated successfully";
 };
 
