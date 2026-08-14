@@ -292,6 +292,22 @@ body {
   color: var(--ink);
 }
 
+.income-amount {
+  color: #2e8b57 !important;
+}
+
+.expense-amount {
+  color: #d64545 !important;
+}
+
+.net-profit {
+  color: #2e8b57 !important;
+}
+
+.net-loss {
+  color: #d64545 !important;
+}
+
 /* Loading */
 .loading {
   display: flex;

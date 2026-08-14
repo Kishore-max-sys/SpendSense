@@ -250,12 +250,28 @@ function Transactions() {
   }, [transactions]);
 
   const totalFilteredTransactions = filteredTransactions.length;
-  const totalFilteredAmount = useMemo(() => {
-    return filteredTransactions.reduce(
-      (sum, transaction) => sum + Number(transaction.amount),
-      0,
-    );
+
+  const totalFilteredIncome = useMemo(() => {
+    return filteredTransactions.reduce((sum, transaction) => {
+      if (transaction.type === "income") {
+        return sum + Number(transaction.amount);
+      }
+      return sum;
+    }, 0);
   }, [filteredTransactions]);
+
+  const totalFilteredExpense = useMemo(() => {
+    return filteredTransactions.reduce((sum, transaction) => {
+      if (transaction.type === "expense") {
+        return sum + Number(transaction.amount);
+      }
+      return sum;
+    }, 0);
+  }, [filteredTransactions]);
+
+  const totalFilteredNet = useMemo(() => {
+    return totalFilteredIncome - totalFilteredExpense;
+  }, [totalFilteredIncome, totalFilteredExpense]);
 
   const hasActiveFilters =
     searchCategoryId !== 0 || startDate !== "" || endDate !== "";
@@ -525,7 +541,20 @@ function Transactions() {
                 {totalFilteredTransactions === 1
                   ? "transaction"
                   : "transactions"}{" "}
-                · <strong>₹ {totalFilteredAmount}</strong>
+                · Income{" "}
+                <strong className="income-amount">
+                  ₹ {totalFilteredIncome}
+                </strong>{" "}
+                · Expense{" "}
+                <strong className="expense-amount">
+                  ₹ {totalFilteredExpense}
+                </strong>{" "}
+                · Net{" "}
+                <strong
+                  className={totalFilteredNet < 0 ? "net-loss" : "net-profit"}
+                >
+                  {totalFilteredNet < 0 && "-"}₹ {Math.abs(totalFilteredNet)}
+                </strong>
               </p>
 
               <div className="tp-statement">
